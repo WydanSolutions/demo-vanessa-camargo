@@ -346,7 +346,7 @@ table.t td.acc{white-space:nowrap;text-align:right}
 .bq-ayuda b{color:var(--oro-osc)}
 .bq-ayuda code{font-family:var(--sans);background:var(--papel);padding:1px 6px;border-radius:6px;color:var(--tinta)}
 .bq-pie{position:relative;z-index:2;margin-top:22px;display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--tinta3);letter-spacing:.05em}
-.bq-pie img{height:15px;opacity:.75}
+.bq-pie img{height:26px;opacity:.85}
 .bq-volver{background:none;border:0;color:var(--tinta3);font-size:12.5px;cursor:pointer;margin-top:14px;position:relative;z-index:2}
 .bq-volver:hover{color:var(--oro-osc)}
 
@@ -424,8 +424,8 @@ table.t td.acc{white-space:nowrap;text-align:right}
 .lat-pie{padding:12px 16px 14px;border-top:1px solid var(--linea);position:relative;z-index:1}
 .lat-salir{border:0;background:none;cursor:pointer;color:var(--tinta3);font-size:13px;padding:4px 0}
 .lat-salir:hover{color:var(--mal)}
-.lat-wydan{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:10.5px;color:var(--tinta3);letter-spacing:.04em}
-.lat-wydan img{height:13px;opacity:.7}
+.lat-wydan{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;color:var(--tinta3);letter-spacing:.04em}
+.lat-wydan img{height:26px;opacity:.85}
 .tapa{display:none}
 
 .contenido{margin-left:var(--lateral);min-height:100vh;display:flex;flex-direction:column}
@@ -1413,7 +1413,7 @@ body.arrastrando{cursor:grabbing;user-select:none}
 .ca-lista span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34mm}
 .ca-lista i{flex:1;border-bottom:1px dotted var(--c2);min-width:3mm}
 .ca-lista b{font-family:var(--serif);font-size:10pt;color:var(--c1);white-space:nowrap}
-.ca-pie{position:absolute;left:0;right:0;bottom:14mm;text-align:center;font-family:var(--serif);font-style:italic;font-size:11pt;color:var(--tinta2)}
+.ca-pie{position:absolute;left:0;right:0;bottom:15mm;text-align:center;font-family:var(--serif);font-style:italic;font-size:11pt;color:var(--tinta2)}
 
 /* ---------- La carta del presupuesto (corre de una hoja a otra) ---------- */
 .carta{padding:0 19mm;font-size:10.5pt;line-height:1.5}
@@ -1455,8 +1455,20 @@ body.arrastrando{cursor:grabbing;user-select:none}
 .listado .imp-boda{margin-top:0}
 .lst td{vertical-align:middle}
 .lst .lst-num{font-family:var(--serif);font-size:13pt;font-weight:600;color:var(--oro-osc)}
-.ca-lista b small{display:block;font-family:var(--sans);font-size:6.5pt;color:var(--tinta3);font-weight:400;text-align:right}
+.ca-cab h2 small{font-size:12pt;color:var(--tinta3);font-weight:400}
 .carta-libre{white-space:pre-line;margin:0;font-size:10.5pt}
+
+/* ---------- «Desarrollado por Wydan» en todos los PDF ---------- */
+.imp-wydan{display:flex;align-items:center;justify-content:center;gap:2mm;font-size:7.5pt;letter-spacing:.06em;color:#8E9BA9}
+.imp-wydan img{height:6.5mm;width:auto}
+.pg .imp-wydan{position:absolute;left:0;right:0;bottom:3mm}
+.pg .imp-pie{bottom:12mm}
+.pg.apaisada .imp-pie{bottom:10mm}
+.pg.cartel .imp-wydan{bottom:2.5mm}
+.imp-corrido{width:100%;border-collapse:collapse}
+.imp-corrido>tbody>tr>td,.imp-corrido>tfoot>tr>td{padding:0}
+.imp-corrido>tfoot .imp-wydan{padding:5mm 0 0}
+.imp-t.chica.lst td{padding:1.5mm 1.5mm}
 
 </style>
 </head>
@@ -6289,9 +6301,18 @@ function imprimir(html, titulo, apaisado = false, corrido = false) {
   document.title = titulo;
   let estilo = $('#pagina-imp');
   if (!estilo) { estilo = document.createElement('style'); estilo.id = 'pagina-imp'; document.head.appendChild(estilo); }
-  estilo.textContent = `@page{size:A4 ${apaisado ? 'landscape' : 'portrait'};margin:${corrido ? '15mm 0 18mm' : '0'}}`;
-  $('#impreso').innerHTML = html;
+  estilo.textContent = `@page{size:A4 ${apaisado ? 'landscape' : 'portrait'};margin:${corrido ? '15mm 0 8mm' : '0'}}`;
+  /* «Desarrollado por Wydan» con su logo, en TODAS las hojas de todos los PDF:
+     en las hojas fijas va al pie de cada una; en la carta que corre, un pie fijo que se repite en cada hoja. */
+  const marca = `<div class="imp-wydan"><span>Desarrollado por</span><img src="${LOGO_WYDAN}" alt="Wydan Solutions"></div>`;
+  /* En la carta que corre, el pie va en el <tfoot> de una tabla: el navegador lo repite al pie de cada hoja
+     y le guarda su lugar (con position:fixed se iba arriba de la hoja 2). */
+  $('#impreso').innerHTML = corrido
+    ? `<table class="imp-corrido"><tfoot><tr><td>${marca}</td></tr></tfoot><tbody><tr><td>${html}</td></tr></tbody></table>`
+    : html;
+  if (!corrido) $$('#impreso .pg').forEach(pg => pg.insertAdjacentHTML('beforeend', marca));
   $('#impreso').classList.toggle('apaisado', apaisado);
+  $('#impreso').classList.toggle('corrido', corrido);
   aviso('En la ventana que se abre, elegí «Guardar como PDF»');
   const listo = document.fonts?.ready || Promise.resolve();
   listo.then(() => setTimeout(() => {
@@ -6427,13 +6448,16 @@ function imprimirCartel(b) {
   const apellido = n => n.replace(/^Familia /, '').split(' ').slice(-1)[0];
   const inv = Store.deBoda('invitados', b.id).filter(i => i.mesaId && i.estado !== 'No viene')
     .sort((x, y) => apellido(x.nombre).localeCompare(apellido(y.nombre), 'es') || x.nombre.localeCompare(y.nombre, 'es'));
-  const html = `<section class="pg cartel" style="--c1:${c1};--c2:${c2};--c3:${c3};--c4:${c4}">
+  /* Hasta 84 nombres por hoja (3 columnas de 28); si son más, sigue en otra hoja con el mismo diseño */
+  const POR_HOJA = 84;
+  const hojas = [];
+  for (let i = 0; i < inv.length; i += POR_HOJA) hojas.push(inv.slice(i, i + POR_HOJA));
+  const html = (hojas.length ? hojas : [[]]).map((l, n) => `<section class="pg cartel" style="--c1:${c1};--c2:${c2};--c3:${c3};--c4:${c4}">
     <div class="ca-marco"></div>
     <div class="ca-cab"><small>Bienvenidos a la boda de</small><b class="script">${esc(b.novia)} &amp; ${esc(b.novio)}</b>
-      <div class="pt-adorno"><i></i>♡<i></i></div><h2>Encontrá tu mesa</h2></div>
-    <div class="ca-lista">${inv.map(i => { const m = Store.obtener('mesas', i.mesaId), n = nombreMesa(m, b); return `<div><span>${esc(i.nombre)}</span><i></i>
-      <b>Mesa ${m.num}${n !== 'Mesa ' + m.num ? `<small>${esc(n)}</small>` : ''}</b></div>`; }).join('')}</div>
-    <div class="ca-pie">${conMayuscula(fechaMedia(b.fecha))} · ${esc(b.lugar)}</div></section>`;
+      <div class="pt-adorno"><i></i>♡<i></i></div><h2>Encontrá tu mesa${hojas.length > 1 ? ` <small>· ${apellido(l[0].nombre)[0]} a ${apellido(l[l.length - 1].nombre)[0]}</small>` : ''}</h2></div>
+    <div class="ca-lista">${l.map(i => `<div><span>${esc(i.nombre)}</span><i></i><b>Mesa ${Store.obtener('mesas', i.mesaId).num}</b></div>`).join('')}</div>
+    <div class="ca-pie">${conMayuscula(fechaMedia(b.fecha))} · ${esc(b.lugar)}</div></section>`).join('');
   imprimir(html, `Cartel de ubicación ${Boda.pareja(b)}`);
 }
 
