@@ -6369,7 +6369,6 @@ function imprimirPresupuesto(p) {
     invitados: invitadosTexto(p),
   });
   const html = `<div class="carta">
-    <div class="carta-fija" aria-hidden="true">${ramaEsquina()}</div>
     ${cabezaCarta(p.fecha)}
     <div class="carta-sres">Sres. ${esc(parejaCarta(p.pareja))}</div>
     <p class="carta-intro">${esc(intro)}</p>
@@ -6397,7 +6396,6 @@ function imprimirCatalogo() {
   const c = Store.cfg();
   const planes = ordenar(Store.listar('planes'), p => p.orden);
   const html = `<div class="carta">
-    <div class="carta-fija" aria-hidden="true">${ramaEsquina()}</div>
     ${cabezaCarta(iso(HOY()))}
     <div class="carta-sres">Nuestros servicios</div>
     <p class="carta-intro">Cada boda es única. Estas son las formas en que podemos acompañarlos, desde la organización completa hasta la ceremonia o la recepción.</p>
